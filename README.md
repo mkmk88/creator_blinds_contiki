@@ -1,5 +1,5 @@
 # creator_blinds_contiki
-This is a firmware for 6lowpan clicker which is part of the Creator Ci40 IoT Developer Kit. This firmware is responsible for controlling window blinds using LWM2M.
+This is a firmware for 6lowpan clicker which is part of the [Creator Ci40 IoT Developer Kit](http://creatordev.io/ci40-iot-dev-kit.html). This firmware is responsible for controlling window blinds using LWM2M.
 
 ## Install
 ```sh
@@ -19,3 +19,6 @@ make
 ```
 ## Flash
 You need [MPLAB IPE](http://microchip.wikidot.com/ipe:installation) to flash. Choose board PIC32MX470F512H and select "main.hex" file for programming.
+## Debug
+Currently you can debug using prints over UART. It is however possible to build the project with debug symbols end export it to the [MPLAB X IDE](http://www.microchip.com/mplab/mplab-x-ide).
+Detailed instruction of how to debug using MPLAB debugger is in progress.

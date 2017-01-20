@@ -31,11 +31,30 @@
 #include "awa/static.h"
 #include "blinds_debug.h"
 
+#define MAX_NAME_LENGTH 128
+
 typedef struct {
     AwaStaticClient *awaClient;
 } context_t;
 
 static context_t ctx;
+
+/*
+ * This IPSO object should be used with a generic position actuator from 0 to 100%. This resource optionally allows
+ * setting the transition time for an operation that changes the position of the actuator, and for reading the remaining
+ * time of the currently active transition.
+ * ObjectID: 3337
+ */
+typedef struct {
+    float CurrentPosition; // 5536 - Current position or desired position of a positioner actuator.
+    float TransitionTime; // 5537 - The time expected to move the actuator to the new position.
+    float RemainingTime; // 5538 - The time remaining in an operation.
+    float MinMeasuredValue; // 5601 - The minimum value set on the actuator since power ON or reset.
+    float MaxMeasuredValue; // 5602 - The maximum value set on the actuator since power ON or reset.
+    float MinLimit; // 5519 - The minimum value that can be measured by the sensor.
+    float MaxLimit; // 5520 - The maximum value that can be measured by the sensor.
+    char ApplicationType[MAX_NAME_LENGTH]; // 5750 - The application type of the sensor or actuator as a string depending on the use case.
+} IPSOPositioner_t;
 
 PROCESS(main_process, "Main process");
 AUTOSTART_PROCESSES(&main_process);

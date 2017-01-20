@@ -31,3 +31,10 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Contiki
+contiki-mikro-e.map
+main.mikro-e
+obj_mikro-e/
+symbols.c
+symbols.h

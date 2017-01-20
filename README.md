@@ -8,7 +8,7 @@ cd creator_blinds_contiki
 ./install.sh
 ```
 ## Configure
-See project-conf.h file for different CONFIG_* options. The most important is the one that sets the IPv6 address of your LWM2M Bootstrap server.
+See [project-conf.h](https://github.com/mkmk88/creator_blinds_contiki/blob/master/project-conf.h) file for different CONFIG_* options. The most important is the one that sets the IPv6 address of your LWM2M Bootstrap server.
 See [Creator docs](https://docs.creatordev.io/ci40/) for information how to configure LWM2M Bootstrap server.
 ## Compile
 You need Microchip compiler for PIC32. I recommend version [1.34](http://ww1.microchip.com/downloads/en/DeviceDoc/xc32-v1.34-full-install-linux-installer.run).

@@ -105,6 +105,8 @@ static void setup_awa_client(AwaStaticClient *awaClient)
 
 static AwaResult handle_create_resource(AwaResourceID id)
 {
+    LOG("Creating resource %d\n", id);
+
     switch(id) {
         case CurrentPosition_ID:
             positioner.CurrentPosition = 0.0f;
@@ -155,6 +157,8 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
     AwaResult result = AwaResult_InternalError;
     float new_value = (float)(**((AwaFloat **)dataPointer));
 
+    LOG("Writing to resource %d\n", id);
+
     switch(id) {
         case CurrentPosition_ID:
             result = update_float_resource(&positioner.CurrentPosition, new_value, changed);
@@ -195,6 +199,8 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
 
 static AwaResult handle_read_resource(AwaResourceID id, void **dataPointer, size_t *dataSize)
 {
+    LOG("Reading from resource %d\n", id);
+
     switch(id) {
         case CurrentPosition_ID:
             *dataPointer = &positioner.CurrentPosition;
@@ -241,6 +247,8 @@ static AwaResult handler(AwaStaticClient *client, AwaOperation operation, AwaObj
         resourceInstanceID, void **dataPointer, size_t *dataSize, bool *changed)
 {
     AwaResult result = AwaResult_InternalError;
+
+    LOG("Handle operation\n");
 
     if (objectID != IPSOPositioner_ID) {
         LOGE("Wrong object ID: %d\n", objectID);

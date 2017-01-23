@@ -47,19 +47,31 @@ static context_t ctx;
  * This IPSO object should be used with a generic position actuator from 0 to 100%. This resource
  * optionally allows setting the transition time for an operation that changes the position of
  * the actuator, and for reading the remaining time of the currently active transition.
- * ObjectID: 3337
  */
 typedef struct {
-    float CurrentPosition; /* 5536 - Current position or desired position of a positioner actuator. */
-    float TransitionTime; /* 5537 - The time expected to move the actuator to the new position. */
-    float RemainingTime; /* 5538 - The time remaining in an operation. */
-    float MinMeasuredValue; /* 5601 - The minimum value set on the actuator since power ON or reset. */
-    float MaxMeasuredValue; /* 5602 - The maximum value set on the actuator since power ON or reset. */
-    float MinLimit; /* 5519 - The minimum value that can be measured by the sensor. */
-    float MaxLimit; /* 5520 - The maximum value that can be measured by the sensor. */
-    char ApplicationType[MAX_NAME_LENGTH]; /* 5750 - The application type of the sensor or actuator
-                                                     as a string depending on the use case. */
+    float CurrentPosition; /* Current position or desired position of a positioner actuator. */
+    float TransitionTime; /*The time expected to move the actuator to the new position. */
+    float RemainingTime; /* The time remaining in an operation. */
+    float MinMeasuredValue; /* The minimum value set on the actuator since power ON or reset. */
+    float MaxMeasuredValue; /* The maximum value set on the actuator since power ON or reset. */
+    float MinLimit; /* The minimum value that can be measured by the sensor. */
+    float MaxLimit; /* The maximum value that can be measured by the sensor. */
+    char ApplicationType[MAX_NAME_LENGTH]; /* The application type of the sensor or actuator as
+                                              a string depending on the use case. */
 } IPSOPositioner_t;
+/* Object ID */
+#define IPSOPositioner_ID       3337
+/* Resources IDs */
+#define CurrentPosition_ID  5536
+#define TransitionTime_ID   5537
+#define RemainingTime_ID    5538
+#define MinMeasuredValue_ID 5601
+#define MaxMeasuredValue_ID 5602
+#define MinLimit_ID         5519
+#define MaxLimit_ID         5520
+#define ApplicationType_ID  5750
+
+static IPSOPositioner_t positioner;
 
 PROCESS(main_process, "Main process");
 AUTOSTART_PROCESSES(&main_process);
@@ -87,6 +99,48 @@ static void setup_awa_client(AwaStaticClient *awaClient)
     AWA_ASSERT(AwaStaticClient_Init(awaClient));
 }
 
+static AwaResult handler(AwaStaticClient * client, AwaOperation operation, AwaObjectID objectID,
+        AwaObjectInstanceID objectInstanceID, AwaResourceID resourceID, AwaResourceInstanceID
+        resourceInstanceID, void ** dataPointer, size_t * dataSize, bool * changed)
+{
+    return AwaResult_InternalError;
+}
+
+static void define_positioner_optional_resource(AwaStaticClient *awaClient, AwaResourceID id,
+        const char *name)
+{
+    AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, id, name,
+                AwaResourceType_Float, 0, 1, AwaResourceOperations_ReadOnly));
+    AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
+               id, handler));
+}
+
+static void define_positioner_object(AwaStaticClient *awaClient)
+{
+    AWA_ASSERT(AwaStaticClient_DefineObject(awaClient, IPSOPositioner_ID, "IPSOPositioner", 1, 1));
+    AWA_ASSERT(AwaStaticClient_SetObjectOperationHandler(awaClient, IPSOPositioner_ID, handler));
+
+    AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, CurrentPosition_ID,
+                "CurrentPosition", AwaResourceType_Float, 1, 1, AwaResourceOperations_ReadWrite));
+    AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
+                CurrentPosition_ID, handler));
+
+    AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, TransitionTime_ID,
+                "TransitionTime", AwaResourceType_Float, 0, 1, AwaResourceOperations_ReadWrite));
+    AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
+                TransitionTime_ID, handler));
+
+    define_positioner_optional_resource(awaClient, RemainingTime_ID, "RemainingTime");
+    define_positioner_optional_resource(awaClient, MinMeasuredValue_ID, "MinMeasuredValueTime");
+    define_positioner_optional_resource(awaClient, MaxMeasuredValue_ID, "MaxMeasuredValueTime");
+    define_positioner_optional_resource(awaClient, MinLimit_ID, "MinLimt");
+    define_positioner_optional_resource(awaClient, MaxLimit_ID, "MaxLimt");
+
+    AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, ApplicationType_ID,
+                "ApplicationType", AwaResourceType_String, 0, 1, AwaResourceOperations_ReadWrite));
+    AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
+                ApplicationType_ID, handler));
+}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(main_process, ev, data)
 {

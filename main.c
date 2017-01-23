@@ -35,10 +35,13 @@
 #include "awa/static.h"
 #include "blinds_debug.h"
 
+#define DEFAULT_TRANSITION_TIME_MS 1000
 #define MAX_NAME_LENGTH 128
+#define DEFAULT_NAME "Window blinds controller"
 
 typedef struct {
     AwaStaticClient *awaClient;
+    float requested_position;
 } context_t;
 
 static context_t ctx;
@@ -94,16 +97,179 @@ static void setup_awa_client(AwaStaticClient *awaClient)
     AWA_ASSERT(AwaStaticClient_SetLogLevel(AwaLogLevel_Error));
     AWA_ASSERT(AwaStaticClient_SetEndPointName(awaClient, CONFIG_ENDPOINT_NAME));
     AWA_ASSERT(AwaStaticClient_SetCoAPListenAddressPort(awaClient, "::", CONFIG_COAP_LISTEN_PORT));
+    LOG("Setting boostrap URI to: %s\n", CONFIG_BOOTSTRAP_URI);
     AWA_ASSERT(AwaStaticClient_SetBootstrapServerURI(awaClient, CONFIG_BOOTSTRAP_URI));
 
     AWA_ASSERT(AwaStaticClient_Init(awaClient));
 }
 
-static AwaResult handler(AwaStaticClient * client, AwaOperation operation, AwaObjectID objectID,
-        AwaObjectInstanceID objectInstanceID, AwaResourceID resourceID, AwaResourceInstanceID
-        resourceInstanceID, void ** dataPointer, size_t * dataSize, bool * changed)
+static AwaResult handle_create_resource(AwaResourceID id)
 {
+    switch(id) {
+        case CurrentPosition_ID:
+            positioner.CurrentPosition = 0.0f;
+            break;
+        case TransitionTime_ID:
+            positioner.TransitionTime = DEFAULT_TRANSITION_TIME_MS;
+            break;
+        case RemainingTime_ID:
+            positioner.RemainingTime = 0.0f;
+            break;
+        case MinMeasuredValue_ID:
+            positioner.MinMeasuredValue = 0.0f;
+            break;
+        case MaxMeasuredValue_ID:
+            positioner.MaxMeasuredValue = 0.0f;
+            break;
+        case MinLimit_ID:
+            positioner.MinLimit = 0.0f;
+            break;
+        case MaxLimit_ID:
+            positioner.MaxLimit = 0.0f;
+            break;
+        case ApplicationType_ID:
+            strcpy(positioner.ApplicationType, DEFAULT_NAME);
+            break;
+        default:
+            LOGE("Unknown resource id: %d\n", id);
+            return AwaResult_InternalError;
+    }
+
+    return AwaResult_SuccessCreated;
+}
+
+static AwaResult update_float_resource(float *resource, float new_value, bool *changed)
+{
+    if (new_value != *resource) {
+        *resource = new_value;
+        *changed = true;
+        return AwaResult_SuccessChanged;
+    }
+
     return AwaResult_InternalError;
+}
+
+static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, size_t *dataSize, 
+        bool *changed)
+{
+    AwaResult result = AwaResult_InternalError;
+    float new_value = (float)(**((AwaFloat **)dataPointer));
+
+    switch(id) {
+        case CurrentPosition_ID:
+            result = update_float_resource(&positioner.CurrentPosition, new_value, changed);
+            break;
+        case TransitionTime_ID:
+            result = update_float_resource(&positioner.TransitionTime, new_value, changed);
+            break;
+        case RemainingTime_ID:
+            result = update_float_resource(&positioner.RemainingTime, new_value, changed);
+            break;
+        case MinMeasuredValue_ID:
+            result = update_float_resource(&positioner.MinMeasuredValue, new_value, changed);
+            break;
+        case MaxMeasuredValue_ID:
+            result = update_float_resource(&positioner.MaxMeasuredValue, new_value, changed);
+            break;
+        case MinLimit_ID:
+            result = update_float_resource(&positioner.MinLimit, new_value, changed);
+            break;
+        case MaxLimit_ID:
+            result = update_float_resource(&positioner.MaxLimit, new_value, changed);
+            break;
+        case ApplicationType_ID:
+            if (*dataSize < MAX_NAME_LENGTH) {
+                if (strcmp(*dataPointer, positioner.ApplicationType)) {
+                    strncpy(positioner.ApplicationType, *dataPointer, MAX_NAME_LENGTH);
+                    *changed = true;
+                }
+            }
+            break;
+        default:
+            LOGE("Unknown resource id: %d\n", id);
+            return AwaResult_InternalError;
+    }
+
+    return result;
+}
+
+static AwaResult handle_read_resource(AwaResourceID id, void **dataPointer, size_t *dataSize)
+{
+    switch(id) {
+        case CurrentPosition_ID:
+            *dataPointer = &positioner.CurrentPosition;
+            *dataSize = sizeof(positioner.CurrentPosition);
+            break;
+        case TransitionTime_ID:
+            *dataPointer = &positioner.TransitionTime;
+            *dataSize = sizeof(positioner.TransitionTime);
+            break;
+        case RemainingTime_ID:
+            *dataPointer = &positioner.RemainingTime;
+            *dataSize = sizeof(positioner.RemainingTime);
+            break;
+        case MinMeasuredValue_ID:
+            *dataPointer = &positioner.MinMeasuredValue;
+            *dataSize = sizeof(positioner.MinMeasuredValue);
+            break;
+        case MaxMeasuredValue_ID:
+            *dataPointer = &positioner.MaxMeasuredValue;
+            *dataSize = sizeof(positioner.MaxMeasuredValue);
+            break;
+        case MinLimit_ID:
+            *dataPointer = &positioner.MinLimit;
+            *dataSize = sizeof(positioner.MinLimit);
+            break;
+        case MaxLimit_ID:
+            *dataPointer = &positioner.MaxLimit;
+            *dataSize = sizeof(positioner.MaxLimit);
+            break;
+        case ApplicationType_ID:
+            *dataPointer = &positioner.ApplicationType;
+            *dataSize = strlen(positioner.ApplicationType) + 1;
+            break;
+        default:
+            LOGE("Unknown resource id: %d\n", id);
+            return AwaResult_InternalError;
+    }
+
+    return AwaResult_SuccessContent;
+}
+
+static AwaResult handler(AwaStaticClient *client, AwaOperation operation, AwaObjectID objectID,
+        AwaObjectInstanceID objectInstanceID, AwaResourceID resourceID, AwaResourceInstanceID
+        resourceInstanceID, void **dataPointer, size_t *dataSize, bool *changed)
+{
+    AwaResult result = AwaResult_InternalError;
+
+    if (objectID != IPSOPositioner_ID) {
+        LOGE("Wrong object ID: %d\n", objectID);
+        return result;
+    }
+
+    if (objectInstanceID != 0) {
+        LOGE("Wrong instance ID: %d\n", objectInstanceID);
+        return result;
+    }
+
+    switch (operation) {
+        case AwaOperation_CreateObjectInstance:
+            memset(&positioner, 0, sizeof(positioner));
+            result = AwaResult_SuccessCreated;
+            break;
+        case AwaOperation_CreateResource:
+            result = handle_create_resource(resourceID);
+            break;
+        case AwaOperation_Write:
+            result = handle_write_resource(resourceID, dataPointer, dataSize, changed);
+            break;
+        case AwaOperation_Read:
+            result = handle_read_resource(resourceID, dataPointer, dataSize);
+            break;
+        default:
+            break;
+    }
+    return result;
 }
 
 static void define_positioner_optional_resource(AwaStaticClient *awaClient, AwaResourceID id,
@@ -142,10 +308,9 @@ static void define_positioner_object(AwaStaticClient *awaClient)
                 ApplicationType_ID, handler));
 }
 
-static void create_heater_object(AwaStaticClient *awaClient)
+static void create_positioner_object(AwaStaticClient *awaClient)
 {
     AWA_ASSERT(AwaStaticClient_CreateObjectInstance(awaClient, IPSOPositioner_ID, 0));
-    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, CurrentPosition_ID));
     AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, TransitionTime_ID));
     AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, RemainingTime_ID));
     AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, MinMeasuredValue_ID));
@@ -171,7 +336,7 @@ PROCESS_THREAD(main_process, ev, data)
 
         setup_awa_client(ctx.awaClient);
         define_positioner_object(ctx.awaClient);
-        create_heater_object(ctx.awaClient);
+        create_positioner_object(ctx.awaClient);
 
         LOG("Awa setup - COMPLETED\n");
         while (1)

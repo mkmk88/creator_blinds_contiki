@@ -141,6 +141,20 @@ static void define_positioner_object(AwaStaticClient *awaClient)
     AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
                 ApplicationType_ID, handler));
 }
+
+static void create_heater_object(AwaStaticClient *awaClient)
+{
+    AWA_ASSERT(AwaStaticClient_CreateObjectInstance(awaClient, IPSOPositioner_ID, 0));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, CurrentPosition_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, TransitionTime_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, RemainingTime_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, MinMeasuredValue_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, MaxMeasuredValue_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, MinLimit_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, MaxLimit_ID));
+    AWA_ASSERT(AwaStaticClient_CreateResource(awaClient, IPSOPositioner_ID, 0, ApplicationType_ID));
+}
+
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(main_process, ev, data)
 {
@@ -156,6 +170,8 @@ PROCESS_THREAD(main_process, ev, data)
         }
 
         setup_awa_client(ctx.awaClient);
+        define_positioner_object(ctx.awaClient);
+        create_heater_object(ctx.awaClient);
 
         LOG("Awa setup - COMPLETED\n");
         while (1)

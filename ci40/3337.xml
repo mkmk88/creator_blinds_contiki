@@ -1,0 +1,109 @@
+<ObjectDefinition>
+<ObjectID>3337</ObjectID>
+<Name>IPSO Positioner</Name>
+<MIMEType>application/vnd.oma.lwm2m.ext:3337</MIMEType>
+<Description>This IPSO object should be used with a generic position actuator from 0 to 100%. This resource optionally allows setting the transition time for an operation that changes the position of the actuator, and for reading the remaining time of the currently active transition.        </Description>
+<SerialisationName>IPSOPositioner</SerialisationName>
+<Singleton>false</Singleton>
+<Properties>
+    <PropertyDefinition>
+    <PropertyID>5536</PropertyID>
+    <Name>Current Position</Name>
+    <Description>Current position or desired position of a positioner actuator.</Description>
+    <DataType>Float</DataType>
+    <Units>%</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>true</IsMandatory>
+    <Access>ReadWrite</Access>
+    <SerialisationName>CurrentPosition</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5537</PropertyID>
+    <Name>Transition Time</Name>
+    <Description>The time expected to move the actuator to the new position.</Description>
+    <DataType>Float</DataType>
+    <Units>s</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>ReadWrite</Access>
+    <SerialisationName>TransitionTime</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5538</PropertyID>
+    <Name>Remaining Time</Name>
+    <Description>The time remaining in an operation.</Description>
+    <DataType>Float</DataType>
+    <Units>s</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>Read</Access>
+    <SerialisationName>RemainingTime</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5601</PropertyID>
+    <Name>Min Measured Value</Name>
+    <Description>The minimum value set on the actuator since power ON or reset.</Description>
+    <DataType>Float</DataType>
+    <Units>Same as Measured Value</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>Read</Access>
+    <SerialisationName>MinMeasuredValue</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5602</PropertyID>
+    <Name>Max Measured Value</Name>
+    <Description>The maximum value set on the actuator since power ON or reset.</Description>
+    <DataType>Float</DataType>
+    <Units>Same as Measured Value</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>Read</Access>
+    <SerialisationName>MaxMeasuredValue</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5605</PropertyID>
+    <Name>Reset Min and Max Measured Value</Name>
+    <Description>Reset the Min and Max Measured Values to Current Value.</Description>
+    <DataType>NotSet</DataType>
+    <Units></Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>NoAccess</Access>
+    <SerialisationName>ResetMinandMaxMeasuredValue</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5519</PropertyID>
+    <Name>Min Limit</Name>
+    <Description>The minimum value that can be measured by the sensor.</Description>
+    <DataType>Float</DataType>
+    <Units>Same as Measured Value</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>Read</Access>
+    <SerialisationName>MinLimit</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5520</PropertyID>
+    <Name>Max Limit</Name>
+    <Description>The maximum value that can be measured by the sensor.</Description>
+    <DataType>Float</DataType>
+    <Units>Same as Measured Value</Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>Read</Access>
+    <SerialisationName>MaxLimit</SerialisationName>
+    </PropertyDefinition>
+    <PropertyDefinition>
+    <PropertyID>5750</PropertyID>
+    <Name>Application Type</Name>
+    <Description>The application type of the sensor or actuator as a string depending on the use case.</Description>
+    <DataType>String</DataType>
+    <Units></Units>
+    <IsCollection>false</IsCollection>
+    <IsMandatory>false</IsMandatory>
+    <Access>ReadWrite</Access>
+    <SerialisationName>ApplicationType</SerialisationName>
+    </PropertyDefinition>
+</Properties>
+</ObjectDefinition>

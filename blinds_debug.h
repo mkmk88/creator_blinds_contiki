@@ -35,15 +35,6 @@
 #include "project-conf.h"
 
 #if CONFIG_DEBUG
-#define AWA_ASSERT(x) \
-    if ((x) != AwaError_Success) { \
-        debug_hang_up(false); \
-    }
-#else
-#define AWA_ASSERT(x) x;
-#endif
-
-#if CONFIG_DEBUG
 #define LOG(fmt, ...) do { printf("%s:%d:%s(): " fmt, __FILE__, __LINE__, \
     __func__,  ##__VA_ARGS__); } while (0)
 #define LOGE(fmt, ...) LOG("ERROR " fmt, ##__VA_ARGS__)
@@ -52,6 +43,16 @@
 #define LOG(fmt, ...)
 #define LOGE(fmt, ...)
 #define LOGW(fmt, ...)
+#endif
+
+#if CONFIG_DEBUG
+#define AWA_ASSERT(x) \
+    if ((x) != AwaError_Success) { \
+        LOGE("Assert - entering infinite loop!\n"); \
+        debug_hang_up(false); \
+    }
+#else
+#define AWA_ASSERT(x) x;
 #endif
 
 void debug_hang_up(bool success);

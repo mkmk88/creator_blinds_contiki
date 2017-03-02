@@ -41,7 +41,7 @@
 
 typedef struct {
     AwaStaticClient *awaClient;
-    float requested_position;
+    int requested_position;
 } context_t;
 
 static context_t ctx;
@@ -52,7 +52,7 @@ static context_t ctx;
  * the actuator, and for reading the remaining time of the currently active transition.
  */
 typedef struct {
-    float CurrentPosition; /* Current position or desired position of a positioner actuator. */
+    int CurrentPosition; /* Current position or desired position of a positioner actuator. */
     float TransitionTime; /*The time expected to move the actuator to the new position. */
     float RemainingTime; /* The time remaining in an operation. */
     float MinMeasuredValue; /* The minimum value set on the actuator since power ON or reset. */
@@ -161,7 +161,13 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
 
     switch(id) {
         case CurrentPosition_ID:
-            result = update_float_resource(&positioner.CurrentPosition, new_value, changed);
+            /* This is temporary workaround because current Awa implementation
+             * crashes when writing to float. It will be changed to update_float_resource
+             * when it's fixed.
+             */
+            positioner.CurrentPosition = (int)(**((int **)dataPointer));
+            *changed = true;
+            result = AwaResult_SuccessChanged;
             break;
         case TransitionTime_ID:
             result = update_float_resource(&positioner.TransitionTime, new_value, changed);
@@ -295,7 +301,7 @@ static void define_positioner_object(AwaStaticClient *awaClient)
     AWA_ASSERT(AwaStaticClient_SetObjectOperationHandler(awaClient, IPSOPositioner_ID, handler));
 
     AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, CurrentPosition_ID,
-                "CurrentPosition", AwaResourceType_Float, 1, 1, AwaResourceOperations_ReadWrite));
+                "CurrentPosition", AwaResourceType_Integer, 1, 1, AwaResourceOperations_ReadWrite));
     AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
                 CurrentPosition_ID, handler));
 

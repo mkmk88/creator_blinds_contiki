@@ -10,7 +10,7 @@
     <PropertyID>5536</PropertyID>
     <Name>Current Position</Name>
     <Description>Current position or desired position of a positioner actuator.</Description>
-    <DataType>Float</DataType>
+    <DataType>Int</DataType>
     <Units>%</Units>
     <IsCollection>false</IsCollection>
     <IsMandatory>true</IsMandatory>

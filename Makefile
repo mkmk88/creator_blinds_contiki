@@ -22,6 +22,7 @@ APPS += client
 APPS += common
 
 PROJECT_SOURCEFILES += blinds_debug.c
+PROJECT_SOURCEFILES += blinds_controller.c
 
 all: main
 	xc32-bin2hex main.$(TARGET)

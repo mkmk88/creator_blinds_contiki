@@ -29,8 +29,8 @@
  */
 #include <stdbool.h>
 #include <sys/clock.h>
-#include "dev/leds.h"
-#include "debug.h"
+#include <dev/leds.h>
+#include "blinds_debug.h"
 
 #define DEBUG_NOTIFICATION_DELAY_MS 1000
 

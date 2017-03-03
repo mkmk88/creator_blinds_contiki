@@ -34,6 +34,7 @@
 #include "letmecreate/core/debug.h"
 #include "awa/static.h"
 #include "blinds_debug.h"
+#include "blinds_controller.h"
 
 #define DEFAULT_TRANSITION_TIME_MS 1000
 #define MAX_NAME_LENGTH 128
@@ -166,8 +167,13 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
              * when it's fixed.
              */
             positioner.CurrentPosition = (int)(**((int **)dataPointer));
-            *changed = true;
-            result = AwaResult_SuccessChanged;
+            if (blinds_controller_update(positioner.CurrentPosition) != BLINDS_OK) {
+                *changed = false;
+                result = AwaResult_InternalError;
+            } else {
+                *changed = true;
+                result = AwaResult_SuccessChanged;
+            }
             break;
         case TransitionTime_ID:
             result = update_float_resource(&positioner.TransitionTime, new_value, changed);

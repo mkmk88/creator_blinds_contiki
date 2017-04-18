@@ -1,5 +1,6 @@
 # creator_blinds_contiki
 This is a firmware for 6lowpan clicker which is part of the [Creator Ci40 IoT Developer Kit](http://creatordev.io/ci40-iot-dev-kit.html). This firmware is responsible for controlling window blinds using LWM2M.
+NOTE: This is only proof of concept. There're no proper error handling / parameters validation etc.
 
 ## Install
 ```sh

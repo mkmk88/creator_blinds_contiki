@@ -10,7 +10,7 @@
     <PropertyID>5536</PropertyID>
     <Name>Current Position</Name>
     <Description>Current position or desired position of a positioner actuator.</Description>
-    <DataType>Int</DataType>
+    <DataType>Integer</DataType>
     <Units>%</Units>
     <IsCollection>false</IsCollection>
     <IsMandatory>true</IsMandatory>
@@ -21,7 +21,7 @@
     <PropertyID>5537</PropertyID>
     <Name>Transition Time</Name>
     <Description>The time expected to move the actuator to the new position.</Description>
-    <DataType>Float</DataType>
+    <DataType>Integer</DataType>
     <Units>s</Units>
     <IsCollection>false</IsCollection>
     <IsMandatory>false</IsMandatory>

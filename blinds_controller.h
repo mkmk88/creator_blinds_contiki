@@ -6,6 +6,6 @@ typedef enum {
     BLINDS_ERROR
 } blinds_ctrl_ret_t;
 
-blinds_ctrl_ret_t blinds_controller_update(int new_position);
+blinds_ctrl_ret_t blinds_controller_update(int dir, int time);
 
 #endif

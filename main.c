@@ -39,6 +39,7 @@
 #define DEFAULT_TRANSITION_TIME_MS 1000
 #define MAX_NAME_LENGTH 128
 #define DEFAULT_NAME "Window blinds controller"
+#define DIRECTION_TRESHOLD 50
 
 /*
  * This IPSO object should be used with a generic position actuator from 0 to 100%. This resource
@@ -47,7 +48,7 @@
  */
 typedef struct {
     int CurrentPosition; /* Current position or desired position of a positioner actuator. */
-    float TransitionTime; /*The time expected to move the actuator to the new position. */
+    int TransitionTime; /*The time expected to move the actuator to the new position. */
     float RemainingTime; /* The time remaining in an operation. */
     float MinMeasuredValue; /* The minimum value set on the actuator since power ON or reset. */
     float MaxMeasuredValue; /* The maximum value set on the actuator since power ON or reset. */
@@ -71,12 +72,13 @@ typedef struct {
 typedef struct {
     AwaStaticClient *awaClient;
     IPSOPositioner_t positioner;
-    bool is_position_change_requested;
+    process_event_t action_request_event;
 } context_t;
 
 static context_t ctx;
 
 PROCESS(main_process, "Main process");
+PROCESS(blinds_process, "Blinds process");
 AUTOSTART_PROCESSES(&main_process);
 
 static IPSOPositioner_t *get_positioner()
@@ -174,16 +176,14 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
              * when it's fixed.
              */
             positioner->CurrentPosition = (int)(**((int **)dataPointer));
-            if (blinds_controller_update(positioner->CurrentPosition) != BLINDS_OK) {
-                *changed = false;
-                result = AwaResult_InternalError;
-            } else {
-                *changed = true;
-                result = AwaResult_SuccessChanged;
-            }
+            *changed = true;
+            result = AwaResult_SuccessChanged;
             break;
         case TransitionTime_ID:
-            result = update_float_resource(&positioner->TransitionTime, new_value, changed);
+            positioner->TransitionTime = (int)(**((int **)dataPointer));
+            *changed = true;
+            process_post(&blinds_process, ctx.action_request_event, NULL);
+            result = AwaResult_SuccessChanged;
             break;
         case RemainingTime_ID:
             result = update_float_resource(&positioner->RemainingTime, new_value, changed);
@@ -284,7 +284,7 @@ static AwaResult handler(AwaStaticClient *client, AwaOperation operation, AwaObj
 
     switch (operation) {
         case AwaOperation_CreateObjectInstance:
-            memset(&positioner, 0, sizeof(IPSOPositioner_t));
+            memset(positioner, 0, sizeof(IPSOPositioner_t));
             result = AwaResult_SuccessCreated;
             break;
         case AwaOperation_CreateResource:
@@ -322,7 +322,7 @@ static void define_positioner_object(AwaStaticClient *awaClient)
                 CurrentPosition_ID, handler));
 
     AWA_ASSERT(AwaStaticClient_DefineResource(awaClient, IPSOPositioner_ID, TransitionTime_ID,
-                "TransitionTime", AwaResourceType_Float, 0, 1, AwaResourceOperations_ReadWrite));
+                "TransitionTime", AwaResourceType_Integer, 0, 1, AwaResourceOperations_ReadWrite));
     AWA_ASSERT(AwaStaticClient_SetResourceOperationHandler(awaClient, IPSOPositioner_ID,
                 TransitionTime_ID, handler));
 
@@ -357,6 +357,9 @@ PROCESS_THREAD(main_process, ev, data)
     {
         LOG("Window Blinds Controller - START\n");
 
+        ctx.action_request_event = process_alloc_event();
+        process_start(&blinds_process, NULL);
+
         set_default_router();
 
         ctx.awaClient = AwaStaticClient_New();
@@ -387,4 +390,19 @@ PROCESS_THREAD(main_process, ev, data)
     PROCESS_END();
 }
 
+PROCESS_THREAD(blinds_process, ev, data)
+{
+    PROCESS_BEGIN();
+    {
+        while (1)
+        {
+            PROCESS_WAIT_EVENT();
+            if (ev == ctx.action_request_event) {
+                blinds_controller_update(ctx.positioner.CurrentPosition > DIRECTION_TRESHOLD ?
+                        1 : -1, ctx.positioner.TransitionTime);
+            }
+        }
+    }
+    PROCESS_END();
+}
 /*---------------------------------------------------------------------------*/

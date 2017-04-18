@@ -40,13 +40,6 @@
 #define MAX_NAME_LENGTH 128
 #define DEFAULT_NAME "Window blinds controller"
 
-typedef struct {
-    AwaStaticClient *awaClient;
-    int requested_position;
-} context_t;
-
-static context_t ctx;
-
 /*
  * This IPSO object should be used with a generic position actuator from 0 to 100%. This resource
  * optionally allows setting the transition time for an operation that changes the position of
@@ -75,10 +68,21 @@ typedef struct {
 #define MaxLimit_ID         5520
 #define ApplicationType_ID  5750
 
-static IPSOPositioner_t positioner;
+typedef struct {
+    AwaStaticClient *awaClient;
+    IPSOPositioner_t positioner;
+    bool is_position_change_requested;
+} context_t;
+
+static context_t ctx;
 
 PROCESS(main_process, "Main process");
 AUTOSTART_PROCESSES(&main_process);
+
+static IPSOPositioner_t *get_positioner()
+{
+    return &ctx.positioner;
+}
 
 static void set_default_router()
 {
@@ -104,34 +108,34 @@ static void setup_awa_client(AwaStaticClient *awaClient)
     AWA_ASSERT(AwaStaticClient_Init(awaClient));
 }
 
-static AwaResult handle_create_resource(AwaResourceID id)
+static AwaResult handle_create_resource(AwaResourceID id, IPSOPositioner_t *positioner)
 {
     LOG("Creating resource %d\n", id);
 
     switch(id) {
         case CurrentPosition_ID:
-            positioner.CurrentPosition = 0.0f;
+            positioner->CurrentPosition = 0.0f;
             break;
         case TransitionTime_ID:
-            positioner.TransitionTime = DEFAULT_TRANSITION_TIME_MS;
+            positioner->TransitionTime = DEFAULT_TRANSITION_TIME_MS;
             break;
         case RemainingTime_ID:
-            positioner.RemainingTime = 0.0f;
+            positioner->RemainingTime = 0.0f;
             break;
         case MinMeasuredValue_ID:
-            positioner.MinMeasuredValue = 0.0f;
+            positioner->MinMeasuredValue = 0.0f;
             break;
         case MaxMeasuredValue_ID:
-            positioner.MaxMeasuredValue = 0.0f;
+            positioner->MaxMeasuredValue = 0.0f;
             break;
         case MinLimit_ID:
-            positioner.MinLimit = 0.0f;
+            positioner->MinLimit = 0.0f;
             break;
         case MaxLimit_ID:
-            positioner.MaxLimit = 0.0f;
+            positioner->MaxLimit = 0.0f;
             break;
         case ApplicationType_ID:
-            strcpy(positioner.ApplicationType, DEFAULT_NAME);
+            strcpy(positioner->ApplicationType, DEFAULT_NAME);
             break;
         default:
             LOGE("Unknown resource id: %d\n", id);
@@ -156,9 +160,12 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
         bool *changed)
 {
     AwaResult result = AwaResult_InternalError;
+    IPSOPositioner_t *positioner;
     float new_value = (float)(**((AwaFloat **)dataPointer));
 
     LOG("Writing to resource %d\n", id);
+
+    positioner = get_positioner();
 
     switch(id) {
         case CurrentPosition_ID:
@@ -166,8 +173,8 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
              * crashes when writing to float. It will be changed to update_float_resource
              * when it's fixed.
              */
-            positioner.CurrentPosition = (int)(**((int **)dataPointer));
-            if (blinds_controller_update(positioner.CurrentPosition) != BLINDS_OK) {
+            positioner->CurrentPosition = (int)(**((int **)dataPointer));
+            if (blinds_controller_update(positioner->CurrentPosition) != BLINDS_OK) {
                 *changed = false;
                 result = AwaResult_InternalError;
             } else {
@@ -176,27 +183,27 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
             }
             break;
         case TransitionTime_ID:
-            result = update_float_resource(&positioner.TransitionTime, new_value, changed);
+            result = update_float_resource(&positioner->TransitionTime, new_value, changed);
             break;
         case RemainingTime_ID:
-            result = update_float_resource(&positioner.RemainingTime, new_value, changed);
+            result = update_float_resource(&positioner->RemainingTime, new_value, changed);
             break;
         case MinMeasuredValue_ID:
-            result = update_float_resource(&positioner.MinMeasuredValue, new_value, changed);
+            result = update_float_resource(&positioner->MinMeasuredValue, new_value, changed);
             break;
         case MaxMeasuredValue_ID:
-            result = update_float_resource(&positioner.MaxMeasuredValue, new_value, changed);
+            result = update_float_resource(&positioner->MaxMeasuredValue, new_value, changed);
             break;
         case MinLimit_ID:
-            result = update_float_resource(&positioner.MinLimit, new_value, changed);
+            result = update_float_resource(&positioner->MinLimit, new_value, changed);
             break;
         case MaxLimit_ID:
-            result = update_float_resource(&positioner.MaxLimit, new_value, changed);
+            result = update_float_resource(&positioner->MaxLimit, new_value, changed);
             break;
         case ApplicationType_ID:
             if (*dataSize < MAX_NAME_LENGTH) {
-                if (strcmp(*dataPointer, positioner.ApplicationType)) {
-                    strncpy(positioner.ApplicationType, *dataPointer, MAX_NAME_LENGTH);
+                if (strcmp(*dataPointer, positioner->ApplicationType)) {
+                    strncpy(positioner->ApplicationType, *dataPointer, MAX_NAME_LENGTH);
                     *changed = true;
                 }
             }
@@ -209,42 +216,43 @@ static AwaResult handle_write_resource(AwaResourceID id, void **dataPointer, siz
     return result;
 }
 
-static AwaResult handle_read_resource(AwaResourceID id, void **dataPointer, size_t *dataSize)
+static AwaResult handle_read_resource(AwaResourceID id, void **dataPointer, size_t *dataSize,
+        IPSOPositioner_t *positioner)
 {
     LOG("Reading from resource %d\n", id);
 
     switch(id) {
         case CurrentPosition_ID:
-            *dataPointer = &positioner.CurrentPosition;
-            *dataSize = sizeof(positioner.CurrentPosition);
+            *dataPointer = &positioner->CurrentPosition;
+            *dataSize = sizeof(positioner->CurrentPosition);
             break;
         case TransitionTime_ID:
-            *dataPointer = &positioner.TransitionTime;
-            *dataSize = sizeof(positioner.TransitionTime);
+            *dataPointer = &positioner->TransitionTime;
+            *dataSize = sizeof(positioner->TransitionTime);
             break;
         case RemainingTime_ID:
-            *dataPointer = &positioner.RemainingTime;
-            *dataSize = sizeof(positioner.RemainingTime);
+            *dataPointer = &positioner->RemainingTime;
+            *dataSize = sizeof(positioner->RemainingTime);
             break;
         case MinMeasuredValue_ID:
-            *dataPointer = &positioner.MinMeasuredValue;
-            *dataSize = sizeof(positioner.MinMeasuredValue);
+            *dataPointer = &positioner->MinMeasuredValue;
+            *dataSize = sizeof(positioner->MinMeasuredValue);
             break;
         case MaxMeasuredValue_ID:
-            *dataPointer = &positioner.MaxMeasuredValue;
-            *dataSize = sizeof(positioner.MaxMeasuredValue);
+            *dataPointer = &positioner->MaxMeasuredValue;
+            *dataSize = sizeof(positioner->MaxMeasuredValue);
             break;
         case MinLimit_ID:
-            *dataPointer = &positioner.MinLimit;
-            *dataSize = sizeof(positioner.MinLimit);
+            *dataPointer = &positioner->MinLimit;
+            *dataSize = sizeof(positioner->MinLimit);
             break;
         case MaxLimit_ID:
-            *dataPointer = &positioner.MaxLimit;
-            *dataSize = sizeof(positioner.MaxLimit);
+            *dataPointer = &positioner->MaxLimit;
+            *dataSize = sizeof(positioner->MaxLimit);
             break;
         case ApplicationType_ID:
-            *dataPointer = &positioner.ApplicationType;
-            *dataSize = strlen(positioner.ApplicationType) + 1;
+            *dataPointer = &positioner->ApplicationType;
+            *dataSize = strlen(positioner->ApplicationType) + 1;
             break;
         default:
             LOGE("Unknown resource id: %d\n", id);
@@ -258,7 +266,9 @@ static AwaResult handler(AwaStaticClient *client, AwaOperation operation, AwaObj
         AwaObjectInstanceID objectInstanceID, AwaResourceID resourceID, AwaResourceInstanceID
         resourceInstanceID, void **dataPointer, size_t *dataSize, bool *changed)
 {
+
     AwaResult result = AwaResult_InternalError;
+    IPSOPositioner_t *positioner = get_positioner();
 
     LOG("Handle operation\n");
 
@@ -274,17 +284,17 @@ static AwaResult handler(AwaStaticClient *client, AwaOperation operation, AwaObj
 
     switch (operation) {
         case AwaOperation_CreateObjectInstance:
-            memset(&positioner, 0, sizeof(positioner));
+            memset(&positioner, 0, sizeof(IPSOPositioner_t));
             result = AwaResult_SuccessCreated;
             break;
         case AwaOperation_CreateResource:
-            result = handle_create_resource(resourceID);
+            result = handle_create_resource(resourceID, positioner);
             break;
         case AwaOperation_Write:
             result = handle_write_resource(resourceID, dataPointer, dataSize, changed);
             break;
         case AwaOperation_Read:
-            result = handle_read_resource(resourceID, dataPointer, dataSize);
+            result = handle_read_resource(resourceID, dataPointer, dataSize, positioner);
             break;
         default:
             break;
